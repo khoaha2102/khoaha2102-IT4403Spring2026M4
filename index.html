@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Khoa Ha - Milestone 4</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://unpkg.com/mustache@latest"></script>
+</head>
+
+<body>
+<header>
+  <h1>Google Books SPA - Milestone 4</h1>
+  <p>Improved UI with Mustache Templates</p>
+</header>
+
+<div class="container">
+
+  <!-- SEARCH -->
+  <section class="panel">
+    <h2>Search Books</h2>
+    <input type="text" id="searchInput" placeholder="Enter keyword..." />
+    <button id="searchBtn">Search</button>
+
+    <!-- VIEW TOGGLE -->
+    <div class="view-toggle">
+      <button id="gridViewBtn">Grid View</button>
+      <button id="listViewBtn">List View</button>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-layout">
+
+    <!-- RESULTS -->
+    <section class="panel results-panel">
+      <h2>Results</h2>
+      <div id="results" class="grid-view"></div>
+
+      <div id="pagination"></div>
+    </section>
+
+    <!-- DETAILS -->
+    <section class="panel details-panel">
+      <h2>Details</h2>
+      <div id="details"></div>
+    </section>
+
+  </div>
+
+  <!-- COLLECTION -->
+  <section class="panel">
+    <h2>Popular Books</h2>
+    <div id="collection"></div>
+  </section>
+
+</div>
+
+<!-- ================= MUSTACHE TEMPLATES ================= -->
+
+<script id="book-template" type="text/template">
+  {{#items}}
+  <div class="card" data-id="{{id}}">
+    <img src="{{thumbnail}}" />
+    <h3>{{title}}</h3>
+  </div>
+  {{/items}}
+</script>
+
+<script id="details-template" type="text/template">
+  <h3>{{title}}</h3>
+  <img src="{{thumbnail}}" />
+  <p>{{description}}</p>
+  <p><strong>Authors:</strong> {{authors}}</p>
+  <p><strong>Language:</strong> {{language}}</p>
+</script>
+
+<script id="collection-template" type="text/template">
+  {{#items}}
+  <div class="card">
+    <img src="{{thumbnail}}" />
+    <h3>{{title}}</h3>
+  </div>
+  {{/items}}
+</script>
+
+<script src="script.js"></script>
+</body>
+</html>
