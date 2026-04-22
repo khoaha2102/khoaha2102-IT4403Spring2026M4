@@ -71,6 +71,11 @@ button:hover {
   background: #1d4ed8;
 }
 
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -209,16 +214,14 @@ button:hover {
   margin-top: 8px;
 }
 
-/* List view */
-#results.list-mode,
-#collection.list-mode {
+/* List view for search results only */
+#results.list-mode {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-#results.list-mode .book-card,
-#collection.list-mode .book-card {
+#results.list-mode .book-card {
   flex-direction: row;
   align-items: flex-start;
   text-align: left;
@@ -227,21 +230,18 @@ button:hover {
   gap: 14px;
 }
 
-#results.list-mode .book-card img,
-#collection.list-mode .book-card img {
+#results.list-mode .book-card img {
   width: 90px;
   height: 130px;
   margin-bottom: 0;
   flex-shrink: 0;
 }
 
-#results.list-mode .book-info,
-#collection.list-mode .book-info {
+#results.list-mode .book-info {
   flex: 1;
 }
 
-#results.list-mode .book-card h3,
-#collection.list-mode .book-card h3 {
+#results.list-mode .book-card h3 {
   min-height: auto;
   margin-top: 0;
   -webkit-line-clamp: unset;
@@ -275,15 +275,13 @@ button:hover {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 
-  #results.list-mode .book-card,
-  #collection.list-mode .book-card {
+  #results.list-mode .book-card {
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
 
-  #results.list-mode .book-card img,
-  #collection.list-mode .book-card img {
+  #results.list-mode .book-card img {
     width: 120px;
     height: 180px;
   }
