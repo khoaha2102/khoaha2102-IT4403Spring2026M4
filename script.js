@@ -157,6 +157,11 @@ function performSearch() {
     $("#searchMessage").text("Please enter a keyword first.");
     $("#results").empty();
     $("#pagination").empty();
+    $("#detailsContent").html(`
+      <p class="muted">
+        Click any book from the search results or collection to view details here.
+      </p>
+    `);
     allResults = [];
     currentPage = 1;
     $("#gridViewBtn").prop("disabled", true);
