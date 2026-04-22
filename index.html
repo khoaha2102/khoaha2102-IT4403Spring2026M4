@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Khoa Ha - Milestone 4</title>
+  <title>Khoa Ha - Individual Project Milestone 4</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://unpkg.com/mustache@latest"></script>
 </head>
 <body>
   <header>
-    <h1>Google Books SPA - Milestone 4</h1>
+    <h1>Google Books SPA - Individual Project Milestone 4</h1>
     <p>Improved UI with jQuery AJAX and Mustache.js</p>
   </header>
 
@@ -46,6 +46,7 @@
     <div class="main-grid">
       <section class="panel">
         <h2 id="contentTitle">Search Results</h2>
+
         <div id="resultsSection">
           <div id="results" class="results-grid"></div>
           <div id="pagination" class="pagination"></div>
@@ -70,10 +71,9 @@
     </div>
   </div>
 
-  <!-- Mustache template for search results -->
   <script id="result-template" type="text/template">
     {{#items}}
-    <div class="book-card {{viewClass}}" data-id="{{id}}">
+    <div class="book-card" data-id="{{id}}">
       <img src="{{thumbnail}}" alt="{{title}}">
       <div class="book-info">
         <h3>{{title}}</h3>
@@ -87,7 +87,6 @@
     {{/items}}
   </script>
 
-  <!-- Mustache template for details -->
   <script id="details-template" type="text/template">
     <div class="details-card">
       <img src="{{thumbnail}}" alt="{{title}}">
@@ -99,10 +98,10 @@
       <p><strong>Page Count:</strong> {{pageCount}}</p>
       <p><strong>Description:</strong></p>
       <p>{{description}}</p>
+      <p><a href="{{infoLink}}" target="_blank">View on Google Books</a></p>
     </div>
   </script>
 
-  <!-- Mustache template for collection -->
   <script id="collection-template" type="text/template">
     {{#items}}
     <div class="book-card collection-card" data-id="{{id}}">
