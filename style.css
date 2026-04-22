@@ -286,3 +286,7 @@ button:disabled {
     height: 180px;
   }
 }
+  .book-card img,
+  .details-card img {
+    background: #e5e7eb;
+  }
