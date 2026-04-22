@@ -1,6 +1,7 @@
 const API_KEY = "AIzaSyCsdnG_6C-9M_S90PuNnqdCfVa44Zcq7MU";
 const ITEMS_PER_PAGE = 10;
 const MAX_RESULTS = 50;
+const SEARCH_COOLDOWN_MS = 4000;
 
 let allResults = [];
 let currentPage = 1;
@@ -8,6 +9,76 @@ let currentView = "grid";
 let collectionItems = [];
 let activeSection = "search";
 let isSearching = false;
+let lastSearchTime = 0;
+
+const searchCache = {};
+
+const fallbackCollection = [
+  {
+    id: "fallback1",
+    volumeInfo: {
+      title: "Web Development Basics",
+      authors: ["Backup Collection"],
+      publishedDate: "2024",
+      publisher: "Local Backup",
+      language: "en",
+      pageCount: 180,
+      description: "Backup collection item shown if the API is temporarily unavailable.",
+      infoLink: "#",
+      imageLinks: {
+        thumbnail: "https://via.placeholder.com/120x180?text=Backup+Book"
+      }
+    }
+  },
+  {
+    id: "fallback2",
+    volumeInfo: {
+      title: "HTML and CSS Essentials",
+      authors: ["Backup Collection"],
+      publishedDate: "2024",
+      publisher: "Local Backup",
+      language: "en",
+      pageCount: 220,
+      description: "Backup collection item shown if the API is temporarily unavailable.",
+      infoLink: "#",
+      imageLinks: {
+        thumbnail: "https://via.placeholder.com/120x180?text=Backup+Book"
+      }
+    }
+  },
+  {
+    id: "fallback3",
+    volumeInfo: {
+      title: "JavaScript for Beginners",
+      authors: ["Backup Collection"],
+      publishedDate: "2024",
+      publisher: "Local Backup",
+      language: "en",
+      pageCount: 250,
+      description: "Backup collection item shown if the API is temporarily unavailable.",
+      infoLink: "#",
+      imageLinks: {
+        thumbnail: "https://via.placeholder.com/120x180?text=Backup+Book"
+      }
+    }
+  },
+  {
+    id: "fallback4",
+    volumeInfo: {
+      title: "Frontend Development Guide",
+      authors: ["Backup Collection"],
+      publishedDate: "2024",
+      publisher: "Local Backup",
+      language: "en",
+      pageCount: 210,
+      description: "Backup collection item shown if the API is temporarily unavailable.",
+      infoLink: "#",
+      imageLinks: {
+        thumbnail: "https://via.placeholder.com/120x180?text=Backup+Book"
+      }
+    }
+  }
+];
 
 $(document).ready(function () {
   $("#gridViewBtn").prop("disabled", true);
@@ -77,9 +148,7 @@ function buildParams(baseParams) {
 }
 
 function performSearch() {
-  if (isSearching) return;
-
-  const keyword = $("#searchInput").val().trim();
+  const keyword = $("#searchInput").val().trim().toLowerCase();
 
   if (!keyword) {
     $("#searchMessage").text("Please enter a keyword first.");
@@ -92,7 +161,41 @@ function performSearch() {
     return;
   }
 
+  const now = Date.now();
+  if (now - lastSearchTime < SEARCH_COOLDOWN_MS) {
+    const secondsLeft = Math.ceil((SEARCH_COOLDOWN_MS - (now - lastSearchTime)) / 1000);
+    $("#searchMessage").text(`Please wait ${secondsLeft} more second(s) before searching again.`);
+    return;
+  }
+
+  if (isSearching) return;
+
+  if (searchCache[keyword]) {
+    allResults = searchCache[keyword];
+    currentPage = 1;
+    activeSection = "search";
+
+    $("#searchMessage").text(
+      `Showing ${allResults.length} cached results. Click a book to view details.`
+    );
+
+    $("#resultsSection").show();
+    $("#collectionSection").hide();
+    $("#contentTitle").text("Search Results");
+    $("#showSearchBtn").addClass("active-btn");
+    $("#showCollectionBtn").removeClass("active-btn");
+
+    $("#gridViewBtn").prop("disabled", false);
+    $("#listViewBtn").prop("disabled", false);
+
+    renderPage(currentPage);
+    renderPagination();
+    return;
+  }
+
   isSearching = true;
+  lastSearchTime = now;
+
   $("#searchBtn").prop("disabled", true).text("Loading...");
   $("#searchMessage").text("Loading search results...");
   $("#results").empty();
@@ -133,6 +236,7 @@ function performSearch() {
       });
 
       allResults = Array.from(uniqueMap.values()).slice(0, MAX_RESULTS);
+      searchCache[keyword] = allResults;
       currentPage = 1;
       activeSection = "search";
 
@@ -159,14 +263,18 @@ function performSearch() {
     })
     .fail(function (xhr) {
       if (xhr && xhr.status === 429) {
-        $("#searchMessage").text("Too many requests right now. Wait a minute and try again.");
+        $("#searchMessage").text(
+          "Too many requests right now. Please wait a moment and try again."
+        );
       } else {
         $("#searchMessage").text("Search failed. Try again.");
       }
     })
     .always(function () {
       isSearching = false;
-      $("#searchBtn").prop("disabled", false).text("Search");
+      setTimeout(function () {
+        $("#searchBtn").prop("disabled", false).text("Search");
+      }, SEARCH_COOLDOWN_MS);
     });
 }
 
@@ -183,11 +291,16 @@ function renderPage(pageNumber) {
       title: v.title || "No title",
       authors: v.authors ? v.authors.join(", ") : "Unknown",
       publishedDate: v.publishedDate || "N/A",
-      thumbnail: v.imageLinks?.thumbnail || "https://via.placeholder.com/120x180?text=No+Cover"
+      thumbnail:
+        v.imageLinks?.thumbnail ||
+        "https://via.placeholder.com/120x180?text=No+Cover"
     };
   });
 
-  const html = Mustache.render($("#result-template").html(), { items: formatted });
+  const html = Mustache.render($("#result-template").html(), {
+    items: formatted
+  });
+
   $("#results").html(html);
   $("#results").toggleClass("list-mode", currentView === "list");
 
@@ -230,7 +343,9 @@ function showDetails(book) {
     language: v.language || "N/A",
     pageCount: v.pageCount || "N/A",
     description: v.description || "No description",
-    thumbnail: v.imageLinks?.thumbnail || "https://via.placeholder.com/160x240?text=No+Cover",
+    thumbnail:
+      v.imageLinks?.thumbnail ||
+      "https://via.placeholder.com/160x240?text=No+Cover",
     infoLink: v.infoLink || "#"
   };
 
@@ -259,12 +374,10 @@ function loadCollection() {
       $("#collectionMessage").hide();
       renderCollection();
     })
-    .fail(function (xhr) {
-      if (xhr && xhr.status === 429) {
-        $("#collectionMessage").text("Collection is temporarily rate-limited. Refresh in a minute.");
-      } else {
-        $("#collectionMessage").text("Failed to load collection.");
-      }
+    .fail(function () {
+      collectionItems = fallbackCollection;
+      $("#collectionMessage").text("Showing backup collection.");
+      renderCollection();
     });
 }
 
@@ -275,11 +388,16 @@ function renderCollection() {
       id: b.id,
       title: v.title || "No title",
       authors: v.authors ? v.authors.join(", ") : "Unknown",
-      thumbnail: v.imageLinks?.thumbnail || "https://via.placeholder.com/120x180?text=No+Cover"
+      thumbnail:
+        v.imageLinks?.thumbnail ||
+        "https://via.placeholder.com/120x180?text=No+Cover"
     };
   });
 
-  const html = Mustache.render($("#collection-template").html(), { items: formatted });
+  const html = Mustache.render($("#collection-template").html(), {
+    items: formatted
+  });
+
   $("#collection").html(html);
 
   $("#collection .book-card").on("click", function () {
