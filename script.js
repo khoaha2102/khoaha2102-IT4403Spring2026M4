@@ -1,4 +1,4 @@
-const API_KEY = "AIzaSyCsdnG_6C-9M_S90PuNnqdCfVa44Zcq7MU"; 
+const API_KEY = "AIzaSyCsdnG_6C-9M_S90PuNnqdCfVa44Zcq7MU";
 const ITEMS_PER_PAGE = 10;
 const MAX_RESULTS = 50;
 
@@ -7,6 +7,7 @@ let currentPage = 1;
 let currentView = "grid";
 let collectionItems = [];
 let activeSection = "search";
+let isSearching = false;
 
 $(document).ready(function () {
   $("#gridViewBtn").prop("disabled", true);
@@ -64,7 +65,6 @@ $(document).ready(function () {
     $("#contentTitle").text("Collection");
     $("#showCollectionBtn").addClass("active-btn");
     $("#showSearchBtn").removeClass("active-btn");
-
     $("#gridViewBtn").prop("disabled", true);
     $("#listViewBtn").prop("disabled", true);
   });
@@ -73,13 +73,12 @@ $(document).ready(function () {
 });
 
 function buildParams(baseParams) {
-  if (API_KEY && API_KEY.trim() !== "") {
-    return { ...baseParams, key: API_KEY.trim() };
-  }
-  return baseParams;
+  return API_KEY.trim() ? { ...baseParams, key: API_KEY.trim() } : baseParams;
 }
 
 function performSearch() {
+  if (isSearching) return;
+
   const keyword = $("#searchInput").val().trim();
 
   if (!keyword) {
@@ -93,13 +92,14 @@ function performSearch() {
     return;
   }
 
+  isSearching = true;
+  $("#searchBtn").prop("disabled", true).text("Loading...");
   $("#searchMessage").text("Loading search results...");
   $("#results").empty();
   $("#pagination").empty();
   $("#gridViewBtn").prop("disabled", true);
   $("#listViewBtn").prop("disabled", true);
 
-  // Use 2 requests instead of 3
   const req1 = $.getJSON(
     "https://www.googleapis.com/books/v1/volumes",
     buildParams({
@@ -138,8 +138,6 @@ function performSearch() {
 
       if (allResults.length === 0) {
         $("#searchMessage").text("No books found.");
-        $("#gridViewBtn").prop("disabled", true);
-        $("#listViewBtn").prop("disabled", true);
         return;
       }
 
@@ -161,14 +159,14 @@ function performSearch() {
     })
     .fail(function (xhr) {
       if (xhr && xhr.status === 429) {
-        $("#searchMessage").text(
-          "Too many requests right now. Wait a moment and try again."
-        );
+        $("#searchMessage").text("Too many requests right now. Wait a minute and try again.");
       } else {
         $("#searchMessage").text("Search failed. Try again.");
       }
-      $("#gridViewBtn").prop("disabled", true);
-      $("#listViewBtn").prop("disabled", true);
+    })
+    .always(function () {
+      isSearching = false;
+      $("#searchBtn").prop("disabled", false).text("Search");
     });
 }
 
@@ -185,16 +183,11 @@ function renderPage(pageNumber) {
       title: v.title || "No title",
       authors: v.authors ? v.authors.join(", ") : "Unknown",
       publishedDate: v.publishedDate || "N/A",
-      thumbnail:
-        v.imageLinks?.thumbnail ||
-        "https://via.placeholder.com/120x180?text=No+Cover"
+      thumbnail: v.imageLinks?.thumbnail || "https://via.placeholder.com/120x180?text=No+Cover"
     };
   });
 
-  const html = Mustache.render($("#result-template").html(), {
-    items: formatted
-  });
-
+  const html = Mustache.render($("#result-template").html(), { items: formatted });
   $("#results").html(html);
   $("#results").toggleClass("list-mode", currentView === "list");
 
@@ -237,9 +230,7 @@ function showDetails(book) {
     language: v.language || "N/A",
     pageCount: v.pageCount || "N/A",
     description: v.description || "No description",
-    thumbnail:
-      v.imageLinks?.thumbnail ||
-      "https://via.placeholder.com/160x240?text=No+Cover",
+    thumbnail: v.imageLinks?.thumbnail || "https://via.placeholder.com/160x240?text=No+Cover",
     infoLink: v.infoLink || "#"
   };
 
@@ -270,9 +261,7 @@ function loadCollection() {
     })
     .fail(function (xhr) {
       if (xhr && xhr.status === 429) {
-        $("#collectionMessage").text(
-          "Collection is temporarily rate-limited. Refresh in a moment."
-        );
+        $("#collectionMessage").text("Collection is temporarily rate-limited. Refresh in a minute.");
       } else {
         $("#collectionMessage").text("Failed to load collection.");
       }
@@ -286,16 +275,11 @@ function renderCollection() {
       id: b.id,
       title: v.title || "No title",
       authors: v.authors ? v.authors.join(", ") : "Unknown",
-      thumbnail:
-        v.imageLinks?.thumbnail ||
-        "https://via.placeholder.com/120x180?text=No+Cover"
+      thumbnail: v.imageLinks?.thumbnail || "https://via.placeholder.com/120x180?text=No+Cover"
     };
   });
 
-  const html = Mustache.render($("#collection-template").html(), {
-    items: formatted
-  });
-
+  const html = Mustache.render($("#collection-template").html(), { items: formatted });
   $("#collection").html(html);
 
   $("#collection .book-card").on("click", function () {
