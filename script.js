@@ -144,7 +144,10 @@ $(document).ready(function () {
 });
 
 function buildParams(baseParams) {
-  return API_KEY.trim() ? { ...baseParams, key: API_KEY.trim() } : baseParams;
+  if (API_KEY && API_KEY.trim() !== "") {
+    return { ...baseParams, key: API_KEY.trim() };
+  }
+  return baseParams;
 }
 
 function performSearch() {
@@ -293,7 +296,7 @@ function renderPage(pageNumber) {
       publishedDate: v.publishedDate || "N/A",
       thumbnail:
         v.imageLinks?.thumbnail ||
-        "https://via.placeholder.com/120x180?text=No+Cover"
+        "https://via.placeholder.com/120x180?text=No+Cover+Available"
     };
   });
 
@@ -345,7 +348,7 @@ function showDetails(book) {
     description: v.description || "No description",
     thumbnail:
       v.imageLinks?.thumbnail ||
-      "https://via.placeholder.com/160x240?text=No+Cover",
+      "https://via.placeholder.com/160x240?text=No+Cover+Available",
     infoLink: v.infoLink || "#"
   };
 
@@ -390,7 +393,7 @@ function renderCollection() {
       authors: v.authors ? v.authors.join(", ") : "Unknown",
       thumbnail:
         v.imageLinks?.thumbnail ||
-        "https://via.placeholder.com/120x180?text=No+Cover"
+        "https://via.placeholder.com/120x180?text=No+Cover+Available"
     };
   });
 
