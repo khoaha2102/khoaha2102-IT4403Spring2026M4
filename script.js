@@ -15,7 +15,9 @@ $(document).ready(function () {
   $("#searchBtn").on("click", performSearch);
 
   $("#searchInput").on("keypress", function (e) {
-    if (e.which === 13) performSearch();
+    if (e.which === 13) {
+      performSearch();
+    }
   });
 
   $("#gridViewBtn").on("click", function () {
@@ -105,17 +107,21 @@ function performSearch() {
       startIndex: 40
     })
   )
-    .done(function (r1, r2, r3) {
-      const combined = (r1[0].items || [])
-        .concat(r2[0].items || [])
-        .concat(r3[0].items || []);
+    .done(function (response1, response2, response3) {
+      const items1 = response1[0].items || [];
+      const items2 = response2[0].items || [];
+      const items3 = response3[0].items || [];
 
-      const unique = new Map();
-      combined.forEach(b => {
-        if (b.id && !unique.has(b.id)) unique.set(b.id, b);
+      const combined = items1.concat(items2, items3);
+      const uniqueMap = new Map();
+
+      combined.forEach(function (book) {
+        if (book.id && !uniqueMap.has(book.id)) {
+          uniqueMap.set(book.id, book);
+        }
       });
 
-      allResults = Array.from(unique.values()).slice(0, MAX_RESULTS);
+      allResults = Array.from(uniqueMap.values()).slice(0, MAX_RESULTS);
       currentPage = 1;
       activeSection = "search";
 
@@ -155,12 +161,12 @@ function renderPage(pageNumber) {
   const start = (pageNumber - 1) * ITEMS_PER_PAGE;
   const pageItems = allResults.slice(start, start + ITEMS_PER_PAGE);
 
-  const formatted = pageItems.map(b => {
-    const v = b.volumeInfo || {};
+  const formatted = pageItems.map(function (book) {
+    const v = book.volumeInfo || {};
     return {
-      id: b.id,
+      id: book.id,
       title: v.title || "No title",
-      authors: v.authors?.join(", ") || "Unknown",
+      authors: v.authors ? v.authors.join(", ") : "Unknown",
       publishedDate: v.publishedDate || "N/A",
       thumbnail:
         v.imageLinks?.thumbnail ||
@@ -177,7 +183,9 @@ function renderPage(pageNumber) {
 
   $("#results .book-card").on("click", function () {
     const id = $(this).data("id");
-    const book = allResults.find(b => b.id === id);
+    const book = allResults.find(function (b) {
+      return b.id === id;
+    });
     if (book) showDetails(book);
   });
 }
@@ -206,7 +214,7 @@ function showDetails(book) {
 
   const data = {
     title: v.title || "No title",
-    authors: v.authors?.join(", ") || "Unknown",
+    authors: v.authors ? v.authors.join(", ") : "Unknown",
     publisher: v.publisher || "Unknown",
     publishedDate: v.publishedDate || "N/A",
     language: v.language || "N/A",
@@ -246,12 +254,12 @@ function loadCollection() {
 }
 
 function renderCollection() {
-  const formatted = collectionItems.map(b => {
+  const formatted = collectionItems.map(function (b) {
     const v = b.volumeInfo || {};
     return {
       id: b.id,
       title: v.title || "No title",
-      authors: v.authors?.join(", ") || "Unknown",
+      authors: v.authors ? v.authors.join(", ") : "Unknown",
       thumbnail:
         v.imageLinks?.thumbnail ||
         "https://via.placeholder.com/120x180?text=No+Cover"
@@ -266,7 +274,9 @@ function renderCollection() {
 
   $("#collection .book-card").on("click", function () {
     const id = $(this).data("id");
-    const book = collectionItems.find(b => b.id === id);
+    const book = collectionItems.find(function (b) {
+      return b.id === id;
+    });
     if (book) showDetails(book);
   });
 }
