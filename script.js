@@ -1,4 +1,4 @@
-const API_KEY = "";
+const API_KEY = "AIzaSyCsdnG_6C-9M_S90PuNnqdCfVa44Zcq7MU"; 
 const ITEMS_PER_PAGE = 10;
 const MAX_RESULTS = 50;
 
@@ -72,6 +72,13 @@ $(document).ready(function () {
   loadCollection();
 });
 
+function buildParams(baseParams) {
+  if (API_KEY && API_KEY.trim() !== "") {
+    return { ...baseParams, key: API_KEY.trim() };
+  }
+  return baseParams;
+}
+
 function performSearch() {
   const keyword = $("#searchInput").val().trim();
 
@@ -89,30 +96,34 @@ function performSearch() {
   $("#searchMessage").text("Loading search results...");
   $("#results").empty();
   $("#pagination").empty();
+  $("#gridViewBtn").prop("disabled", true);
+  $("#listViewBtn").prop("disabled", true);
 
-  $.when(
-    $.getJSON("https://www.googleapis.com/books/v1/volumes", {
+  // Use 2 requests instead of 3
+  const req1 = $.getJSON(
+    "https://www.googleapis.com/books/v1/volumes",
+    buildParams({
       q: keyword,
-      maxResults: 20,
+      maxResults: 40,
       startIndex: 0
-    }),
-    $.getJSON("https://www.googleapis.com/books/v1/volumes", {
-      q: keyword,
-      maxResults: 20,
-      startIndex: 20
-    }),
-    $.getJSON("https://www.googleapis.com/books/v1/volumes", {
+    })
+  );
+
+  const req2 = $.getJSON(
+    "https://www.googleapis.com/books/v1/volumes",
+    buildParams({
       q: keyword,
       maxResults: 20,
       startIndex: 40
     })
-  )
-    .done(function (response1, response2, response3) {
+  );
+
+  $.when(req1, req2)
+    .done(function (response1, response2) {
       const items1 = response1[0].items || [];
       const items2 = response2[0].items || [];
-      const items3 = response3[0].items || [];
 
-      const combined = items1.concat(items2, items3);
+      const combined = items1.concat(items2);
       const uniqueMap = new Map();
 
       combined.forEach(function (book) {
@@ -148,8 +159,14 @@ function performSearch() {
       renderPage(currentPage);
       renderPagination();
     })
-    .fail(function () {
-      $("#searchMessage").text("Search failed. Try again.");
+    .fail(function (xhr) {
+      if (xhr && xhr.status === 429) {
+        $("#searchMessage").text(
+          "Too many requests right now. Wait a moment and try again."
+        );
+      } else {
+        $("#searchMessage").text("Search failed. Try again.");
+      }
       $("#gridViewBtn").prop("disabled", true);
       $("#listViewBtn").prop("disabled", true);
     });
@@ -233,10 +250,13 @@ function showDetails(book) {
 function loadCollection() {
   $("#collectionMessage").text("Loading collection...");
 
-  $.getJSON("https://www.googleapis.com/books/v1/volumes", {
-    q: "web development programming",
-    maxResults: 12
-  })
+  $.getJSON(
+    "https://www.googleapis.com/books/v1/volumes",
+    buildParams({
+      q: "web development programming",
+      maxResults: 12
+    })
+  )
     .done(function (res) {
       collectionItems = res.items || [];
 
@@ -248,8 +268,14 @@ function loadCollection() {
       $("#collectionMessage").hide();
       renderCollection();
     })
-    .fail(function () {
-      $("#collectionMessage").text("Failed to load collection.");
+    .fail(function (xhr) {
+      if (xhr && xhr.status === 429) {
+        $("#collectionMessage").text(
+          "Collection is temporarily rate-limited. Refresh in a moment."
+        );
+      } else {
+        $("#collectionMessage").text("Failed to load collection.");
+      }
     });
 }
 
