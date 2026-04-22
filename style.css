@@ -205,13 +205,11 @@ button:hover {
   color: #334155;
 }
 
-.small-note {
-  font-size: 0.9rem;
-  color: #475569;
+#collectionSection {
   margin-top: 8px;
 }
 
-/* LIST VIEW */
+/* List view */
 #results.list-mode,
 #collection.list-mode {
   display: flex;
