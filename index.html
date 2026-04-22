@@ -74,7 +74,7 @@
   <script id="result-template" type="text/template">
     {{#items}}
     <div class="book-card" data-id="{{id}}">
-      <img src="{{thumbnail}}" alt="{{title}}">
+      <img src="{{thumbnail}}" alt="{{title}" onerror="this.src='https://via.placeholder.com/120x180?text=No+Cover'">
       <div class="book-info">
         <h3>{{title}}</h3>
         <p><strong>Authors:</strong> {{authors}}</p>
@@ -105,7 +105,7 @@
   <script id="collection-template" type="text/template">
     {{#items}}
     <div class="book-card collection-card" data-id="{{id}}">
-      <img src="{{thumbnail}}" alt="{{title}}">
+      <img src="{{thumbnail}}" alt="{{title}" onerror="this.src='https://via.placeholder.com/120x180?text=No+Cover'">
       <div class="book-info">
         <h3>{{title}}</h3>
         <p><strong>Authors:</strong> {{authors}}</p>
