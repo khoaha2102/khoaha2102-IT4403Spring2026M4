@@ -1,4 +1,4 @@
-const API_KEY = "AIzaSyB2gMpdf1dDa2hKR3j9Zoe5vgJGSrPw7rU";
+const API_KEY = "AIzaSyCsdnG_6C-9M_S90PuNnqdCfVa44Zcq7MU";
 const ITEMS_PER_PAGE = 10;
 const MAX_RESULTS = 50;
 
