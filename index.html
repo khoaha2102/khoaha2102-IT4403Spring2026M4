@@ -4,89 +4,120 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Khoa Ha - Milestone 4</title>
-
   <link rel="stylesheet" href="style.css" />
-
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://unpkg.com/mustache@latest"></script>
 </head>
-
 <body>
-<header>
-  <h1>Google Books SPA - Milestone 4</h1>
-  <p>Improved UI with Mustache Templates</p>
-</header>
+  <header>
+    <h1>Google Books SPA - Milestone 4</h1>
+    <p>Improved UI with jQuery AJAX and Mustache.js</p>
+  </header>
 
-<div class="container">
+  <div class="container">
+    <section class="panel">
+      <h2>Book Search</h2>
+      <div class="search-row">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Enter keywords ..."
+        />
+        <button id="searchBtn">Search</button>
+      </div>
 
-  <!-- SEARCH -->
-  <section class="panel">
-    <h2>Search Books</h2>
-    <input type="text" id="searchInput" placeholder="Enter keyword..." />
-    <button id="searchBtn">Search</button>
+      <div class="toolbar">
+        <div class="view-buttons">
+          <button id="gridViewBtn" class="active-btn">Grid View</button>
+          <button id="listViewBtn">List View</button>
+        </div>
 
-    <!-- VIEW TOGGLE -->
-    <div class="view-toggle">
-      <button id="gridViewBtn">Grid View</button>
-      <button id="listViewBtn">List View</button>
+        <div class="tab-buttons">
+          <button id="showSearchBtn" class="active-btn">Search Results</button>
+          <button id="showCollectionBtn">Collection</button>
+        </div>
+      </div>
+
+      <div class="message" id="searchMessage">
+        Search for books to display results in five page views.
+      </div>
+    </section>
+
+    <div class="main-grid">
+      <section class="panel">
+        <h2 id="contentTitle">Search Results</h2>
+        <div id="resultsSection">
+          <div id="results" class="results-grid"></div>
+          <div id="pagination" class="pagination"></div>
+        </div>
+
+        <div id="collectionSection" style="display: none;">
+          <div id="collectionMessage" class="message">
+            Loading collection...
+          </div>
+          <div id="collection" class="collection-grid"></div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <h2>Book Details</h2>
+        <div id="detailsContent">
+          <p class="muted">
+            Click any book from the search results or collection to view details here.
+          </p>
+        </div>
+      </aside>
     </div>
-  </section>
-
-  <!-- MAIN CONTENT -->
-  <div class="main-layout">
-
-    <!-- RESULTS -->
-    <section class="panel results-panel">
-      <h2>Results</h2>
-      <div id="results" class="grid-view"></div>
-
-      <div id="pagination"></div>
-    </section>
-
-    <!-- DETAILS -->
-    <section class="panel details-panel">
-      <h2>Details</h2>
-      <div id="details"></div>
-    </section>
-
   </div>
 
-  <!-- COLLECTION -->
-  <section class="panel">
-    <h2>Popular Books</h2>
-    <div id="collection"></div>
-  </section>
+  <!-- Mustache template for search results -->
+  <script id="result-template" type="text/template">
+    {{#items}}
+    <div class="book-card {{viewClass}}" data-id="{{id}}">
+      <img src="{{thumbnail}}" alt="{{title}}">
+      <div class="book-info">
+        <h3>{{title}}</h3>
+        <p><strong>Authors:</strong> {{authors}}</p>
+        <p><strong>Published:</strong> {{publishedDate}}</p>
+      </div>
+    </div>
+    {{/items}}
+    {{^items}}
+    <p class="muted">No results found.</p>
+    {{/items}}
+  </script>
 
-</div>
+  <!-- Mustache template for details -->
+  <script id="details-template" type="text/template">
+    <div class="details-card">
+      <img src="{{thumbnail}}" alt="{{title}}">
+      <h3>{{title}}</h3>
+      <p><strong>Authors:</strong> {{authors}}</p>
+      <p><strong>Publisher:</strong> {{publisher}}</p>
+      <p><strong>Published:</strong> {{publishedDate}}</p>
+      <p><strong>Language:</strong> {{language}}</p>
+      <p><strong>Page Count:</strong> {{pageCount}}</p>
+      <p><strong>Description:</strong></p>
+      <p>{{description}}</p>
+    </div>
+  </script>
 
-<!-- ================= MUSTACHE TEMPLATES ================= -->
+  <!-- Mustache template for collection -->
+  <script id="collection-template" type="text/template">
+    {{#items}}
+    <div class="book-card collection-card" data-id="{{id}}">
+      <img src="{{thumbnail}}" alt="{{title}}">
+      <div class="book-info">
+        <h3>{{title}}</h3>
+        <p><strong>Authors:</strong> {{authors}}</p>
+      </div>
+    </div>
+    {{/items}}
+    {{^items}}
+    <p class="muted">No collection items available.</p>
+    {{/items}}
+  </script>
 
-<script id="book-template" type="text/template">
-  {{#items}}
-  <div class="card" data-id="{{id}}">
-    <img src="{{thumbnail}}" />
-    <h3>{{title}}</h3>
-  </div>
-  {{/items}}
-</script>
-
-<script id="details-template" type="text/template">
-  <h3>{{title}}</h3>
-  <img src="{{thumbnail}}" />
-  <p>{{description}}</p>
-  <p><strong>Authors:</strong> {{authors}}</p>
-  <p><strong>Language:</strong> {{language}}</p>
-</script>
-
-<script id="collection-template" type="text/template">
-  {{#items}}
-  <div class="card">
-    <img src="{{thumbnail}}" />
-    <h3>{{title}}</h3>
-  </div>
-  {{/items}}
-</script>
-
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
