@@ -5,41 +5,53 @@ const MAX_RESULTS = 50;
 let allResults = [];
 let currentPage = 1;
 let currentView = "grid";
+let collectionItems = [];
 
 $(document).ready(function () {
-
-  $("#searchBtn").click(performSearch);
-
-  $("#searchInput").keypress(function (e) {
-    if (e.which === 13) performSearch();
+  $("#searchBtn").on("click", function () {
+    performSearch();
   });
 
-  // VIEW TOGGLE
-  $("#gridViewBtn").click(function () {
+  $("#searchInput").on("keypress", function (e) {
+    if (e.which === 13) {
+      performSearch();
+    }
+  });
+
+  $("#gridViewBtn").on("click", function () {
     currentView = "grid";
-    $(this).addClass("active-btn");
+    $("#gridViewBtn").addClass("active-btn");
     $("#listViewBtn").removeClass("active-btn");
+    $("#results").removeClass("list-mode");
+    $("#collection").removeClass("list-mode");
     renderPage(currentPage);
+    renderCollection();
   });
 
-  $("#listViewBtn").click(function () {
+  $("#listViewBtn").on("click", function () {
     currentView = "list";
-    $(this).addClass("active-btn");
+    $("#listViewBtn").addClass("active-btn");
     $("#gridViewBtn").removeClass("active-btn");
+    $("#results").addClass("list-mode");
+    $("#collection").addClass("list-mode");
     renderPage(currentPage);
+    renderCollection();
   });
 
-  // TAB SWITCH
-  $("#showSearchBtn").click(function () {
+  $("#showSearchBtn").on("click", function () {
     $("#resultsSection").show();
     $("#collectionSection").hide();
     $("#contentTitle").text("Search Results");
+    $("#showSearchBtn").addClass("active-btn");
+    $("#showCollectionBtn").removeClass("active-btn");
   });
 
-  $("#showCollectionBtn").click(function () {
+  $("#showCollectionBtn").on("click", function () {
     $("#resultsSection").hide();
     $("#collectionSection").show();
     $("#contentTitle").text("Collection");
+    $("#showCollectionBtn").addClass("active-btn");
+    $("#showSearchBtn").removeClass("active-btn");
   });
 
   loadCollection();
@@ -50,148 +62,219 @@ function performSearch() {
 
   if (!keyword) {
     $("#searchMessage").text("Please enter a keyword first.");
+    $("#results").empty();
+    $("#pagination").empty();
     return;
   }
 
   $("#searchMessage").text("Loading search results...");
+  $("#results").empty();
+  $("#pagination").empty();
 
   $.when(
     $.getJSON("https://www.googleapis.com/books/v1/volumes", {
-      q: keyword, maxResults: 20, startIndex: 0, key: API_KEY
+      q: keyword,
+      maxResults: 20,
+      startIndex: 0,
+      key: API_KEY
     }),
     $.getJSON("https://www.googleapis.com/books/v1/volumes", {
-      q: keyword, maxResults: 20, startIndex: 20, key: API_KEY
+      q: keyword,
+      maxResults: 20,
+      startIndex: 20,
+      key: API_KEY
     }),
     $.getJSON("https://www.googleapis.com/books/v1/volumes", {
-      q: keyword, maxResults: 20, startIndex: 40, key: API_KEY
+      q: keyword,
+      maxResults: 20,
+      startIndex: 40,
+      key: API_KEY
     })
-  ).done(function (r1, r2, r3) {
+  )
+    .done(function (response1, response2, response3) {
+      const items1 = response1[0].items || [];
+      const items2 = response2[0].items || [];
+      const items3 = response3[0].items || [];
 
-    const combined = [...(r1[0].items || []), ...(r2[0].items || []), ...(r3[0].items || [])];
+      const combined = items1.concat(items2, items3);
+      const uniqueMap = new Map();
 
-    const unique = new Map();
-    combined.forEach(b => {
-      if (b.id && !unique.has(b.id)) unique.set(b.id, b);
+      combined.forEach(function (book) {
+        if (book.id && !uniqueMap.has(book.id)) {
+          uniqueMap.set(book.id, book);
+        }
+      });
+
+      allResults = Array.from(uniqueMap.values()).slice(0, MAX_RESULTS);
+      currentPage = 1;
+
+      if (allResults.length === 0) {
+        $("#searchMessage").text("No books found for that keyword.");
+        $("#results").empty();
+        $("#pagination").empty();
+        return;
+      }
+
+      $("#searchMessage").text(
+        `Showing ${allResults.length} results. Click a book to view details.`
+      );
+
+      $("#resultsSection").show();
+      $("#collectionSection").hide();
+      $("#contentTitle").text("Search Results");
+      $("#showSearchBtn").addClass("active-btn");
+      $("#showCollectionBtn").removeClass("active-btn");
+
+      renderPage(currentPage);
+      renderPagination();
+    })
+    .fail(function () {
+      $("#searchMessage").text("Search request failed. Please try again later.");
     });
-
-    allResults = Array.from(unique.values()).slice(0, MAX_RESULTS);
-    currentPage = 1;
-
-    if (allResults.length === 0) {
-      $("#searchMessage").text("No results found.");
-      return;
-    }
-
-    $("#searchMessage").text(`Showing ${allResults.length} results`);
-
-    renderPage(currentPage);
-    renderPagination();
-
-  }).fail(function () {
-    $("#searchMessage").text("Search failed.");
-  });
 }
 
-function renderPage(page) {
-  const start = (page - 1) * ITEMS_PER_PAGE;
-  const pageItems = allResults.slice(start, start + ITEMS_PER_PAGE);
+function renderPage(pageNumber) {
+  const start = (pageNumber - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const pageItems = allResults.slice(start, end);
 
-  const formatted = pageItems.map(book => {
-    const v = book.volumeInfo || {};
+  const formattedItems = pageItems.map(function (book) {
+    const volume = book.volumeInfo || {};
+
     return {
       id: book.id,
-      title: v.title || "No title",
-      authors: v.authors?.join(", ") || "Unknown",
-      publishedDate: v.publishedDate || "N/A",
-      thumbnail: v.imageLinks?.thumbnail || "https://via.placeholder.com/120x180",
-      viewClass: currentView === "list" ? "list-view" : ""
+      title: volume.title || "No title available",
+      authors: volume.authors ? volume.authors.join(", ") : "Unknown author",
+      publishedDate: volume.publishedDate || "Unknown date",
+      thumbnail:
+        volume.imageLinks?.thumbnail ||
+        "https://via.placeholder.com/120x180?text=No+Cover"
     };
   });
 
   const template = $("#result-template").html();
-  const html = Mustache.render(template, { items: formatted });
-
+  const html = Mustache.render(template, { items: formattedItems });
   $("#results").html(html);
 
-  attachClick();
-}
+  if (currentView === "list") {
+    $("#results").addClass("list-mode");
+  } else {
+    $("#results").removeClass("list-mode");
+  }
 
-function attachClick() {
-  $(".book-card").click(function () {
-    const id = $(this).data("id");
+  $("#results .book-card").on("click", function () {
+    const selectedId = $(this).data("id");
+    const selectedBook = allResults.find(function (book) {
+      return book.id === selectedId;
+    });
 
-    const book = allResults.find(b => b.id === id);
-    showDetails(book);
+    if (selectedBook) {
+      showDetails(selectedBook);
+    }
   });
-}
-
-function showDetails(book) {
-  const v = book.volumeInfo || {};
-
-  const data = {
-    title: v.title || "No title",
-    authors: v.authors?.join(", ") || "Unknown",
-    publisher: v.publisher || "Unknown",
-    publishedDate: v.publishedDate || "N/A",
-    language: v.language || "N/A",
-    pageCount: v.pageCount || "N/A",
-    description: v.description || "No description",
-    thumbnail: v.imageLinks?.thumbnail || ""
-  };
-
-  const template = $("#details-template").html();
-  const html = Mustache.render(template, data);
-
-  $("#detailsContent").html(html);
 }
 
 function renderPagination() {
   $("#pagination").empty();
-
   const totalPages = Math.ceil(allResults.length / ITEMS_PER_PAGE);
 
   for (let i = 1; i <= totalPages; i++) {
-    const btn = $("<button>")
-      .text(i)
+    const button = $("<button></button>")
       .addClass("page-btn")
       .toggleClass("active", i === currentPage)
-      .click(function () {
+      .text(i)
+      .on("click", function () {
         currentPage = i;
         renderPage(currentPage);
         renderPagination();
       });
 
-    $("#pagination").append(btn);
+    $("#pagination").append(button);
   }
 }
 
+function showDetails(book) {
+  const volume = book.volumeInfo || {};
+
+  const data = {
+    title: volume.title || "No title available",
+    authors: volume.authors ? volume.authors.join(", ") : "Unknown author",
+    publisher: volume.publisher || "Unknown publisher",
+    publishedDate: volume.publishedDate || "Unknown date",
+    language: volume.language || "N/A",
+    pageCount: volume.pageCount || "N/A",
+    description: volume.description || "No description available.",
+    thumbnail:
+      volume.imageLinks?.thumbnail ||
+      "https://via.placeholder.com/160x240?text=No+Cover",
+    infoLink: volume.infoLink || "#"
+  };
+
+  const template = $("#details-template").html();
+  const html = Mustache.render(template, data);
+  $("#detailsContent").html(html);
+}
+
 function loadCollection() {
+  $("#collectionMessage").text("Loading collection...");
+
   $.getJSON("https://www.googleapis.com/books/v1/volumes", {
-    q: "programming web development",
+    q: "web development programming html css javascript",
     maxResults: 12,
+    orderBy: "relevance",
     key: API_KEY
-  }).done(function (res) {
+  })
+    .done(function (response) {
+      collectionItems = response.items || [];
 
-    const formatted = (res.items || []).map(b => {
-      const v = b.volumeInfo || {};
-      return {
-        id: b.id,
-        title: v.title || "No title",
-        authors: v.authors?.join(", ") || "Unknown",
-        thumbnail: v.imageLinks?.thumbnail || ""
-      };
+      if (collectionItems.length === 0) {
+        $("#collectionMessage").text("No books found in the collection.");
+        $("#collection").empty();
+        return;
+      }
+
+      $("#collectionMessage").text("Showing a Google Books collection.");
+      renderCollection();
+    })
+    .fail(function () {
+      $("#collectionMessage").text(
+        "Could not load the collection. Please try again later."
+      );
+    });
+}
+
+function renderCollection() {
+  const formattedItems = collectionItems.map(function (book) {
+    const volume = book.volumeInfo || {};
+
+    return {
+      id: book.id,
+      title: volume.title || "No title available",
+      authors: volume.authors ? volume.authors.join(", ") : "Unknown author",
+      thumbnail:
+        volume.imageLinks?.thumbnail ||
+        "https://via.placeholder.com/120x180?text=No+Cover"
+    };
+  });
+
+  const template = $("#collection-template").html();
+  const html = Mustache.render(template, { items: formattedItems });
+  $("#collection").html(html);
+
+  if (currentView === "list") {
+    $("#collection").addClass("list-mode");
+  } else {
+    $("#collection").removeClass("list-mode");
+  }
+
+  $("#collection .book-card").on("click", function () {
+    const selectedId = $(this).data("id");
+    const selectedBook = collectionItems.find(function (book) {
+      return book.id === selectedId;
     });
 
-    const template = $("#collection-template").html();
-    const html = Mustache.render(template, { items: formatted });
-
-    $("#collection").html(html);
-
-    $(".collection-card").click(function () {
-      const id = $(this).data("id");
-      const book = res.items.find(b => b.id === id);
-      showDetails(book);
-    });
-
+    if (selectedBook) {
+      showDetails(selectedBook);
+    }
   });
 }
