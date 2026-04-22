@@ -6,10 +6,9 @@ let allResults = [];
 let currentPage = 1;
 let currentView = "grid";
 let collectionItems = [];
+let activeSection = "search";
 
 $(document).ready(function () {
-
-  // Disable view buttons at start
   $("#gridViewBtn").prop("disabled", true);
   $("#listViewBtn").prop("disabled", true);
 
@@ -20,49 +19,52 @@ $(document).ready(function () {
   });
 
   $("#gridViewBtn").on("click", function () {
-    if (allResults.length === 0) return;
+    if (activeSection !== "search" || allResults.length === 0) return;
 
     currentView = "grid";
     $("#gridViewBtn").addClass("active-btn");
     $("#listViewBtn").removeClass("active-btn");
-
     $("#results").removeClass("list-mode");
-    $("#collection").removeClass("list-mode");
-
     renderPage(currentPage);
-    renderCollection();
   });
 
   $("#listViewBtn").on("click", function () {
-    if (allResults.length === 0) return;
+    if (activeSection !== "search" || allResults.length === 0) return;
 
     currentView = "list";
     $("#listViewBtn").addClass("active-btn");
     $("#gridViewBtn").removeClass("active-btn");
-
     $("#results").addClass("list-mode");
-    $("#collection").addClass("list-mode");
-
     renderPage(currentPage);
-    renderCollection();
   });
 
   $("#showSearchBtn").on("click", function () {
+    activeSection = "search";
     $("#resultsSection").show();
     $("#collectionSection").hide();
     $("#contentTitle").text("Search Results");
-
     $("#showSearchBtn").addClass("active-btn");
     $("#showCollectionBtn").removeClass("active-btn");
+
+    if (allResults.length > 0) {
+      $("#gridViewBtn").prop("disabled", false);
+      $("#listViewBtn").prop("disabled", false);
+    } else {
+      $("#gridViewBtn").prop("disabled", true);
+      $("#listViewBtn").prop("disabled", true);
+    }
   });
 
   $("#showCollectionBtn").on("click", function () {
+    activeSection = "collection";
     $("#resultsSection").hide();
     $("#collectionSection").show();
     $("#contentTitle").text("Collection");
-
     $("#showCollectionBtn").addClass("active-btn");
     $("#showSearchBtn").removeClass("active-btn");
+
+    $("#gridViewBtn").prop("disabled", true);
+    $("#listViewBtn").prop("disabled", true);
   });
 
   loadCollection();
@@ -75,6 +77,10 @@ function performSearch() {
     $("#searchMessage").text("Please enter a keyword first.");
     $("#results").empty();
     $("#pagination").empty();
+    allResults = [];
+    currentPage = 1;
+    $("#gridViewBtn").prop("disabled", true);
+    $("#listViewBtn").prop("disabled", true);
     return;
   }
 
@@ -111,9 +117,12 @@ function performSearch() {
 
       allResults = Array.from(unique.values()).slice(0, MAX_RESULTS);
       currentPage = 1;
+      activeSection = "search";
 
       if (allResults.length === 0) {
         $("#searchMessage").text("No books found.");
+        $("#gridViewBtn").prop("disabled", true);
+        $("#listViewBtn").prop("disabled", true);
         return;
       }
 
@@ -124,11 +133,19 @@ function performSearch() {
         `Showing ${allResults.length} results. Click a book to view details.`
       );
 
+      $("#resultsSection").show();
+      $("#collectionSection").hide();
+      $("#contentTitle").text("Search Results");
+      $("#showSearchBtn").addClass("active-btn");
+      $("#showCollectionBtn").removeClass("active-btn");
+
       renderPage(currentPage);
       renderPagination();
     })
     .fail(function () {
       $("#searchMessage").text("Search failed. Try again.");
+      $("#gridViewBtn").prop("disabled", true);
+      $("#listViewBtn").prop("disabled", true);
     });
 }
 
@@ -156,7 +173,6 @@ function renderPage(pageNumber) {
   });
 
   $("#results").html(html);
-
   $("#results").toggleClass("list-mode", currentView === "list");
 
   $("#results .book-card").on("click", function () {
@@ -221,9 +237,7 @@ function loadCollection() {
         return;
       }
 
-      // ✅ FIX: remove loading message
       $("#collectionMessage").hide();
-
       renderCollection();
     })
     .fail(function () {
@@ -249,8 +263,6 @@ function renderCollection() {
   });
 
   $("#collection").html(html);
-
-  $("#collection").toggleClass("list-mode", currentView === "list");
 
   $("#collection .book-card").on("click", function () {
     const id = $(this).data("id");
