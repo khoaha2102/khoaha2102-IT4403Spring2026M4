@@ -379,7 +379,7 @@ function loadCollection() {
     })
     .fail(function () {
       collectionItems = fallbackCollection;
-      $("#collectionMessage").text("Showing backup collection.");
+      $("#collectionMessage").hide();
       renderCollection();
     });
 }
