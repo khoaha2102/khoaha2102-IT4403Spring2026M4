@@ -8,32 +8,41 @@ let currentView = "grid";
 let collectionItems = [];
 
 $(document).ready(function () {
-  $("#searchBtn").on("click", function () {
-    performSearch();
-  });
+
+  // Disable view buttons at start
+  $("#gridViewBtn").prop("disabled", true);
+  $("#listViewBtn").prop("disabled", true);
+
+  $("#searchBtn").on("click", performSearch);
 
   $("#searchInput").on("keypress", function (e) {
-    if (e.which === 13) {
-      performSearch();
-    }
+    if (e.which === 13) performSearch();
   });
 
   $("#gridViewBtn").on("click", function () {
+    if (allResults.length === 0) return;
+
     currentView = "grid";
     $("#gridViewBtn").addClass("active-btn");
     $("#listViewBtn").removeClass("active-btn");
+
     $("#results").removeClass("list-mode");
     $("#collection").removeClass("list-mode");
+
     renderPage(currentPage);
     renderCollection();
   });
 
   $("#listViewBtn").on("click", function () {
+    if (allResults.length === 0) return;
+
     currentView = "list";
     $("#listViewBtn").addClass("active-btn");
     $("#gridViewBtn").removeClass("active-btn");
+
     $("#results").addClass("list-mode");
     $("#collection").addClass("list-mode");
+
     renderPage(currentPage);
     renderCollection();
   });
@@ -42,6 +51,7 @@ $(document).ready(function () {
     $("#resultsSection").show();
     $("#collectionSection").hide();
     $("#contentTitle").text("Search Results");
+
     $("#showSearchBtn").addClass("active-btn");
     $("#showCollectionBtn").removeClass("active-btn");
   });
@@ -50,6 +60,7 @@ $(document).ready(function () {
     $("#resultsSection").hide();
     $("#collectionSection").show();
     $("#contentTitle").text("Collection");
+
     $("#showCollectionBtn").addClass("active-btn");
     $("#showSearchBtn").removeClass("active-btn");
   });
@@ -92,6 +103,7 @@ function performSearch() {
     })
   )
     .done(function (response1, response2, response3) {
+
       const items1 = response1[0].items || [];
       const items2 = response2[0].items || [];
       const items3 = response3[0].items || [];
@@ -110,10 +122,12 @@ function performSearch() {
 
       if (allResults.length === 0) {
         $("#searchMessage").text("No books found for that keyword.");
-        $("#results").empty();
-        $("#pagination").empty();
         return;
       }
+
+      // Enable buttons AFTER search
+      $("#gridViewBtn").prop("disabled", false);
+      $("#listViewBtn").prop("disabled", false);
 
       $("#searchMessage").text(
         `Showing ${allResults.length} results. Click a book to view details.`
@@ -121,9 +135,6 @@ function performSearch() {
 
       $("#resultsSection").show();
       $("#collectionSection").hide();
-      $("#contentTitle").text("Search Results");
-      $("#showSearchBtn").addClass("active-btn");
-      $("#showCollectionBtn").removeClass("active-btn");
 
       renderPage(currentPage);
       renderPagination();
@@ -134,6 +145,10 @@ function performSearch() {
 }
 
 function renderPage(pageNumber) {
+
+  // STOP if no data (IMPORTANT FIX)
+  if (allResults.length === 0) return;
+
   const start = (pageNumber - 1) * ITEMS_PER_PAGE;
   const end = start + ITEMS_PER_PAGE;
   const pageItems = allResults.slice(start, end);
@@ -164,13 +179,8 @@ function renderPage(pageNumber) {
 
   $("#results .book-card").on("click", function () {
     const selectedId = $(this).data("id");
-    const selectedBook = allResults.find(function (book) {
-      return book.id === selectedId;
-    });
-
-    if (selectedBook) {
-      showDetails(selectedBook);
-    }
+    const selectedBook = allResults.find(b => b.id === selectedId);
+    if (selectedBook) showDetails(selectedBook);
   });
 }
 
@@ -179,7 +189,7 @@ function renderPagination() {
   const totalPages = Math.ceil(allResults.length / ITEMS_PER_PAGE);
 
   for (let i = 1; i <= totalPages; i++) {
-    const button = $("<button></button>")
+    const button = $("<button>")
       .addClass("page-btn")
       .toggleClass("active", i === currentPage)
       .text(i)
@@ -194,72 +204,53 @@ function renderPagination() {
 }
 
 function showDetails(book) {
-  const volume = book.volumeInfo || {};
+  const v = book.volumeInfo || {};
 
   const data = {
-    title: volume.title || "No title available",
-    authors: volume.authors ? volume.authors.join(", ") : "Unknown author",
-    publisher: volume.publisher || "Unknown publisher",
-    publishedDate: volume.publishedDate || "Unknown date",
-    language: volume.language || "N/A",
-    pageCount: volume.pageCount || "N/A",
-    description: volume.description || "No description available.",
-    thumbnail:
-      volume.imageLinks?.thumbnail ||
-      "https://via.placeholder.com/160x240?text=No+Cover",
-    infoLink: volume.infoLink || "#"
+    title: v.title || "No title",
+    authors: v.authors?.join(", ") || "Unknown",
+    publisher: v.publisher || "Unknown",
+    publishedDate: v.publishedDate || "N/A",
+    language: v.language || "N/A",
+    pageCount: v.pageCount || "N/A",
+    description: v.description || "No description",
+    thumbnail: v.imageLinks?.thumbnail || "",
+    infoLink: v.infoLink || "#"
   };
 
   const template = $("#details-template").html();
-  const html = Mustache.render(template, data);
-  $("#detailsContent").html(html);
+  $("#detailsContent").html(Mustache.render(template, data));
 }
 
 function loadCollection() {
-  $("#collectionMessage").text("Loading collection...");
-
   $.getJSON("https://www.googleapis.com/books/v1/volumes", {
-    q: "web development programming html css javascript",
+    q: "web development programming",
     maxResults: 12,
-    orderBy: "relevance",
     key: API_KEY
-  })
-    .done(function (response) {
-      collectionItems = response.items || [];
+  }).done(function (res) {
 
-      if (collectionItems.length === 0) {
-        $("#collectionMessage").text("No books found in the collection.");
-        $("#collection").empty();
-        return;
-      }
-
-      $("#collectionMessage").text("Showing a Google Books collection.");
-      renderCollection();
-    })
-    .fail(function () {
-      $("#collectionMessage").text(
-        "Could not load the collection. Please try again later."
-      );
-    });
+    collectionItems = res.items || [];
+    renderCollection();
+  });
 }
 
 function renderCollection() {
-  const formattedItems = collectionItems.map(function (book) {
-    const volume = book.volumeInfo || {};
+
+  const formatted = collectionItems.map(function (book) {
+    const v = book.volumeInfo || {};
 
     return {
       id: book.id,
-      title: volume.title || "No title available",
-      authors: volume.authors ? volume.authors.join(", ") : "Unknown author",
+      title: v.title || "No title",
+      authors: v.authors?.join(", ") || "Unknown",
       thumbnail:
-        volume.imageLinks?.thumbnail ||
+        v.imageLinks?.thumbnail ||
         "https://via.placeholder.com/120x180?text=No+Cover"
     };
   });
 
   const template = $("#collection-template").html();
-  const html = Mustache.render(template, { items: formattedItems });
-  $("#collection").html(html);
+  $("#collection").html(Mustache.render(template, { items: formatted }));
 
   if (currentView === "list") {
     $("#collection").addClass("list-mode");
@@ -268,13 +259,8 @@ function renderCollection() {
   }
 
   $("#collection .book-card").on("click", function () {
-    const selectedId = $(this).data("id");
-    const selectedBook = collectionItems.find(function (book) {
-      return book.id === selectedId;
-    });
-
-    if (selectedBook) {
-      showDetails(selectedBook);
-    }
+    const id = $(this).data("id");
+    const book = collectionItems.find(b => b.id === id);
+    if (book) showDetails(book);
   });
 }
